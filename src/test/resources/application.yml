@@ -1,0 +1,11 @@
+spring:
+  jpa:
+    show-sql: true
+    open-in-view: false
+    hibernate:
+      ddl-auto: create
+  datasource:
+    url: jdbc:tc:mysql:8://mywork_rdb
+    username: root
+    password: cooper2025
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver

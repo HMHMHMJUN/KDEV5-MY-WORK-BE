@@ -1,19 +1,18 @@
 package kr.mywork.domain.company.model;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
-import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import java.time.LocalDateTime;
+import java.util.UUID;
+import kr.mywork.domain.company.service.dto.request.CompanyUpdateRequest;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -57,7 +56,6 @@ public class Company {
 	private LocalDateTime modifiedAt;
 
 	@Setter
-	@Getter
 	private Boolean deleted = false;
 
 	public Company(final UUID id, final String name, final String detail, final String businessNumber,
@@ -72,6 +70,18 @@ public class Company {
 		this.contactPhoneNumber = contactPhoneNumber;
 		this.contactEmail = contactEmail;
 		this.logoImagePath = logoImagePath;
+	}
+
+	public void updateFrom(CompanyUpdateRequest companyUpdateRequest) {
+		this.id = companyUpdateRequest.getId();
+		this.name = companyUpdateRequest.getName();
+		this.detail = companyUpdateRequest.getDetail();
+		this.businessNumber = companyUpdateRequest.getBusinessNumber();
+		this.address = companyUpdateRequest.getAddress();
+		this.type = CompanyType.from(companyUpdateRequest.getType());
+		this.contactPhoneNumber = companyUpdateRequest.getContactPhoneNumber();
+		this.contactEmail = companyUpdateRequest.getContactEmail();
+		this.logoImagePath = companyUpdateRequest.getLogoImagePath();
 	}
 
 }
