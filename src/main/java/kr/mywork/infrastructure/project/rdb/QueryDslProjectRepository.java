@@ -1,26 +1,28 @@
 package kr.mywork.infrastructure.project.rdb;
 
-import static kr.mywork.domain.project.model.QProject.project;
-import static kr.mywork.domain.project.model.QProjectMember.projectMember;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-
 import kr.mywork.domain.member.service.dto.response.MemberProjectInfoResponse;
 import kr.mywork.domain.project.model.Project;
 import kr.mywork.domain.project.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Collection;
+
+import static kr.mywork.domain.project.model.QProject.project;
+import static kr.mywork.domain.project.model.QProjectMember.projectMember;
 
 @Repository
 @RequiredArgsConstructor
@@ -115,7 +117,6 @@ public class QueryDslProjectRepository implements ProjectRepository {
 			.fetchOne();
 	}
 
-	@Override
 	public List<Project> findAllNearDeadlineProjects(final int page, final int size) {
 		final int offset = (page - 1) * size;
 		final LocalDate today = LocalDate.now();
@@ -181,8 +182,12 @@ public class QueryDslProjectRepository implements ProjectRepository {
 			)
 			.fetchOne();
 	}
-
-
+	public List<Project> findProjectsNameById(List<UUID> mostPostProjectIds) {
+		return queryFactory
+			.selectFrom(project)
+			.where(project.id.in(mostPostProjectIds))
+			.fetch();
+	}
 	private BooleanExpression eqProjectStep(final String step) {
 		if (step == null) {
 			return null;

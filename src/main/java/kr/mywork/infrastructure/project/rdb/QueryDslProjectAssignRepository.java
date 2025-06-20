@@ -1,24 +1,25 @@
 package kr.mywork.infrastructure.project.rdb;
 
-import static kr.mywork.domain.project.model.QProjectAssign.projectAssign;
+import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQueryFactory;
+import kr.mywork.domain.company.model.CompanyType;
+import kr.mywork.domain.member.errors.MemberErrorType;
+import kr.mywork.domain.member.errors.MemberTypeNotFoundException;
+import kr.mywork.domain.member.model.MemberRole;
+import kr.mywork.domain.project.model.ProjectAssign;
+import kr.mywork.domain.project.repository.ProjectAssignRepository;
+import kr.mywork.domain.project.service.dto.response.ProjectAssignResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.querydsl.core.types.Projections;
-import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.jpa.impl.JPAQueryFactory;
-
-import kr.mywork.domain.company.model.CompanyType;
-import kr.mywork.domain.project.model.ProjectAssign;
-import kr.mywork.domain.project.repository.ProjectAssignRepository;
-import kr.mywork.domain.project.service.dto.response.ProjectAssignResponse;
-import lombok.RequiredArgsConstructor;
+import static kr.mywork.domain.project.model.QProjectAssign.projectAssign;
 
 @Repository
 @RequiredArgsConstructor
@@ -67,6 +68,23 @@ public class QueryDslProjectAssignRepository implements ProjectAssignRepository 
 		return queryFactory.selectFrom(projectAssign)
 			.where(inCompanyTypeAndCompanyIds(companyIds, companyType))
 			.fetch();
+	}
+
+	@Override
+	public List<UUID> findCompanyProjectsByCompanyId(UUID companyId,String memberRole) {
+		return queryFactory
+			.select(projectAssign.projectId)
+			.from(projectAssign)
+			.where(companyFilter(companyId,memberRole))
+			.fetch();
+	}
+	private BooleanExpression companyFilter(UUID companyId, String memberRole) {
+		if(MemberRole.CLIENT_ADMIN.isSameRoleName(memberRole)){
+			return projectAssign.clientCompanyId.eq(companyId);
+		}else if(MemberRole.DEV_ADMIN.isSameRoleName(memberRole)){
+			return projectAssign.devCompanyId.eq(companyId);
+		}
+		throw new MemberTypeNotFoundException(MemberErrorType.TYPE_NOT_FOUND);
 	}
 
 	private BooleanExpression inCompanyTypeAndCompanyIds(final Collection<UUID> companyIds, final String companyType) {

@@ -1,12 +1,12 @@
 package kr.mywork.domain.project.repository;
 
+import kr.mywork.domain.member.service.dto.response.MemberProjectInfoResponse;
+import kr.mywork.domain.project.model.Project;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-import kr.mywork.domain.member.service.dto.response.MemberProjectInfoResponse;
-import kr.mywork.domain.project.model.Project;
 
 public interface ProjectRepository {
 
@@ -31,4 +31,7 @@ public interface ProjectRepository {
 	Long countNearDeadlineProjects();
 
 	Long countNearDeadlineProjectsByProjectIds(Collection<UUID> projectIds);
+
+	List<Project> findProjectsNameById(List<UUID> mostPostProjectIds);
+
 }

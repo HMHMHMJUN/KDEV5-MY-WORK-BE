@@ -1,12 +1,12 @@
 package kr.mywork.domain.project.repository;
 
+import kr.mywork.domain.project.model.ProjectAssign;
+import kr.mywork.domain.project.service.dto.response.ProjectAssignResponse;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-import kr.mywork.domain.project.model.ProjectAssign;
-import kr.mywork.domain.project.service.dto.response.ProjectAssignResponse;
 
 public interface ProjectAssignRepository {
 
@@ -21,5 +21,7 @@ public interface ProjectAssignRepository {
 	List<ProjectAssign> findAllByCompanyIdsAndType(final Collection<UUID> companyIds, final String companyType);
 
 	List<ProjectAssign> findAllByCompanyId(UUID companyId);
+
+	List<UUID> findCompanyProjectsByCompanyId(final UUID companyId ,String memberRole);
 
 }
