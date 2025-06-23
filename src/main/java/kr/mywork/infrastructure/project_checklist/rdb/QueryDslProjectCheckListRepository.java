@@ -1,26 +1,25 @@
 package kr.mywork.infrastructure.project_checklist.rdb;
 
-import static com.querydsl.core.types.ExpressionUtils.count;
-import static kr.mywork.domain.project_checklist.model.QProjectCheckList.projectCheckList;
-import static kr.mywork.domain.project_step.model.QProjectStep.projectStep;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import org.springframework.stereotype.Repository;
-
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-
 import kr.mywork.domain.project_checklist.model.ProjectCheckList;
 import kr.mywork.domain.project_checklist.repository.ProjectCheckListRepository;
 import kr.mywork.domain.project_checklist.service.dto.request.ProjectCheckListCreateRequest;
 import kr.mywork.domain.project_checklist.service.dto.response.ProjectCheckListSelectResponse;
 import kr.mywork.domain.project_checklist.service.dto.response.ProjectStepCheckListCountResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import static com.querydsl.core.types.ExpressionUtils.count;
+import static kr.mywork.domain.project_checklist.model.QProjectCheckList.projectCheckList;
+import static kr.mywork.domain.project_step.model.QProjectStep.projectStep;
 
 @Repository
 @RequiredArgsConstructor
@@ -69,6 +68,23 @@ public class QueryDslProjectCheckListRepository implements ProjectCheckListRepos
 			.join(projectStep).on(projectCheckList.projectStepId.eq(projectStep.id))
 			.where(projectStep.projectId.eq(projectId), eqProjectStepId(projectStepId))
 			.fetch();
+	}
+
+	@Override
+	public List<ProjectCheckList> findAllByProjectStepIds(List<UUID> projectStepIds, String approval, int page, int pageSize, LocalDateTime fiveDaysAgo) {
+
+		final int offset = (page - 1) * pageSize;
+
+		return queryFactory
+				.selectFrom(projectCheckList)
+				.where(
+						projectCheckList.projectStepId.in(projectStepIds),
+						projectCheckList.approval.eq(approval),
+						projectCheckList.createdAt.goe(fiveDaysAgo)
+				)
+				.offset(offset)
+				.limit(pageSize)
+				.fetch();
 	}
 
 	private BooleanExpression eqProjectStepId(final UUID projectStepId) {
