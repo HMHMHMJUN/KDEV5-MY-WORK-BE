@@ -1,17 +1,13 @@
 package kr.mywork.domain.project_checklist.service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import kr.mywork.common.auth.components.dto.LoginMemberDetail;
+import kr.mywork.domain.member.errors.MemberErrorType;
+import kr.mywork.domain.member.errors.MemberTypeNotFoundException;
+import kr.mywork.domain.member.model.MemberRole;
 import kr.mywork.domain.project.errors.ProjectErrorType;
 import kr.mywork.domain.project.errors.ProjectNotFoundException;
 import kr.mywork.domain.project.model.Project;
+import kr.mywork.domain.project.repository.ProjectAssignRepository;
 import kr.mywork.domain.project.repository.ProjectRepository;
 import kr.mywork.domain.project_checklist.errors.ProjectCheckListErrorType;
 import kr.mywork.domain.project_checklist.errors.ProjectCheckListNotFoundException;
@@ -20,16 +16,21 @@ import kr.mywork.domain.project_checklist.repository.ProjectCheckListRepository;
 import kr.mywork.domain.project_checklist.service.dto.request.ProjectCheckListApprovalRequest;
 import kr.mywork.domain.project_checklist.service.dto.request.ProjectCheckListCreateRequest;
 import kr.mywork.domain.project_checklist.service.dto.request.ProjectCheckListUpdateRequest;
-import kr.mywork.domain.project_checklist.service.dto.response.CheckListProjectStepProgressResponse;
-import kr.mywork.domain.project_checklist.service.dto.response.ProjectCheckListApprovalResponse;
-import kr.mywork.domain.project_checklist.service.dto.response.ProjectCheckListCreateResponse;
-import kr.mywork.domain.project_checklist.service.dto.response.ProjectCheckListDetailResponse;
-import kr.mywork.domain.project_checklist.service.dto.response.ProjectCheckListSelectResponse;
-import kr.mywork.domain.project_checklist.service.dto.response.ProjectCheckListUpdateResponse;
-import kr.mywork.domain.project_checklist.service.dto.response.ProjectStepCheckListCountResponse;
+import kr.mywork.domain.project_checklist.service.dto.response.*;
+import kr.mywork.domain.project_member.repository.ProjectMemberRepository;
 import kr.mywork.domain.project_step.model.ProjectStep;
 import kr.mywork.domain.project_step.repository.ProjectStepRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +39,11 @@ public class ProjectCheckListService {
 	private final ProjectCheckListRepository projectCheckListRepository;
 	private final ProjectStepRepository projectStepRepository;
 	private final ProjectRepository projectRepository;
+	private final ProjectAssignRepository projectAssignRepository;
+	private final ProjectMemberRepository projectMemberRepository;
+
+	@Value("${dashboard.page.size}")
+	private int projectChecklistPageSize;
 
 	@Transactional
 	public ProjectCheckListCreateResponse createProjectCheckList(
@@ -143,5 +149,48 @@ public class ProjectCheckListService {
 			.orElseThrow(() -> new ProjectNotFoundException(ProjectErrorType.PROJECT_NOT_FOUND));
 
 		return projectCheckListRepository.findAllByProjectIdAndStepId(project.getId(), projectStepId);
+	}
+
+	@Transactional
+	public List<MyCheckListWithApprovalResponse> getMyCheckListWithInFiveDays(
+			final int page, final String approval, final LoginMemberDetail memberDetail, final LocalDateTime fiveDaysAgo){
+
+		//로그인한 유저의 타입별로 프로젝트 Ids를 반환
+		final List<UUID> projectIds =  getProjectIdsByRoleName(memberDetail);
+
+		// 프로젝트 ID로 projectStep 정보가져오기(projectId,stepId)
+		final List<ProjectStep> myProjectSteps = projectStepRepository.findAllByIds(projectIds);
+
+		List<UUID> projectStepIds = myProjectSteps.stream()
+				.map(ProjectStep::getId)
+				.toList();
+
+		// projectStepId로 checkList 정보 조회 (checkListId,checkListName,approval)
+		final List<ProjectCheckList> myCheckList = projectCheckListRepository.findAllByProjectStepIds(projectStepIds,approval,page,projectChecklistPageSize,fiveDaysAgo);
+
+		// 리턴 : projectId , checkListId, checkListName, approval
+		Map<UUID,UUID> stepIdToProjectId = myProjectSteps.stream()
+				.collect(Collectors.toMap(ProjectStep::getId,ProjectStep::getProjectId));
+
+		return myCheckList.stream()
+				.map(checkList -> new MyCheckListWithApprovalResponse(
+						stepIdToProjectId.get(checkList.getProjectStepId()),
+						checkList.getId(),
+						checkList.getTitle(),
+						checkList.getApproval()
+				))
+				.toList();
+
+	}
+
+	private List<UUID> getProjectIdsByRoleName(LoginMemberDetail memberDetail) {
+		String roleName = memberDetail.roleName();
+		if (MemberRole.CLIENT_ADMIN.isSameRoleName(roleName) || MemberRole.DEV_ADMIN.isSameRoleName(roleName)) {
+			return projectAssignRepository.findCompanyProjectsByCompanyId(memberDetail.companyId(), roleName);
+		} else if (MemberRole.USER.isSameRoleName(roleName)) {
+			return projectMemberRepository.findProjectIdsByMemberId(memberDetail.memberId());
+		} else {
+			throw new MemberTypeNotFoundException(MemberErrorType.TYPE_NOT_FOUND);
+		}
 	}
 }
