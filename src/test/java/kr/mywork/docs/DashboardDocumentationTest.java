@@ -155,4 +155,51 @@ public class DashboardDocumentationTest extends RestDocsDocumentation {
 				)
 				.build());
 	}
+	@Test
+	@DisplayName("대시보드 최근 체크리스트 조회 API")
+	@Sql("classpath:sql/dashboard-check-list.sql")
+	void 대시보드_체크리스트_조회_성공() throws Exception {
+		//given  [ id = 019739ea-e7eb-76b7-b5e1-b9dc3ea1e9c2, companyId= 019739eb-cd83-7223-b9b0-f186641aef55 ]
+		final String accessToken = createDevAdminAccessToken();
+
+		// when
+		final ResultActions result = mockMvc.perform(
+				get("/api/dashboard/check-list")
+						.param("page", "1")
+						.param("approval","PENDING")
+						.contentType(MediaType.APPLICATION_JSON)
+						.header(HttpHeaders.AUTHORIZATION, toBearerAuthorizationHeader(accessToken)));
+
+		// then
+		result.andExpectAll(
+				status().isOk(),
+				jsonPath("$.result").value(ResultType.SUCCESS.name()),
+				jsonPath("$.data").exists(),
+				jsonPath("$.error").doesNotExist()
+		).andDo(document("dashboard-checklist-success", DashboardCheckListSuccessResource()));
+	}
+
+	private ResourceSnippet DashboardCheckListSuccessResource() {
+		return resource(
+				ResourceSnippetParameters.builder()
+						.tag("Dashboard API")
+						.summary("최근 5일 체크리스트 목록 조회 API")
+						.description("최근 5일 체크리스트 목록을 조회한다.")
+						.requestHeaders(
+								headerWithName(HttpHeaders.CONTENT_TYPE).description("컨텐츠 타입"),
+								headerWithName(HttpHeaders.AUTHORIZATION).description("엑세스 토큰"))
+						.queryParameters(
+								parameterWithName("page").description("페이지 번호 (1부터 시작)"),
+								parameterWithName("approval").description("상태(승인,거절,대기)"))
+						.responseFields(
+								fieldWithPath("result").type(JsonFieldType.STRING).description("응답 결과"),
+								fieldWithPath("data.checkList[].projectId").type(JsonFieldType.STRING).description("체크리스트 프로젝트Id"),
+								fieldWithPath("data.checkList[].checkListId").type(JsonFieldType.STRING).description("체크리스트 id"),
+								fieldWithPath("data.checkList[].checkListName").type(JsonFieldType.STRING).description("체크리스트 이름"),
+								fieldWithPath("data.checkList[].approval").type(JsonFieldType.STRING).description("체크리스트 상태"),
+								fieldWithPath("error").type(JsonFieldType.NULL).description("에러 정보")
+						)
+						.build());
+	}
+
 }
