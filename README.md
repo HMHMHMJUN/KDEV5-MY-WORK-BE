@@ -14,3 +14,5 @@ docker-compose -f ./docker/docker-compose.yml up -d
 # 3. 프로젝트 실행
 java -jar ./build/libs/mywork-be-0.0.1-SNAPSHOT.jar
 ```
+
+# 성준님 PR
